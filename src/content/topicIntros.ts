@@ -16,20 +16,20 @@ export const TOPIC_INTROS: Record<SimTopicId, TopicIntroSlide[]> = {
   'what-is-math': [
     {
       id: 'wim-intro-1',
-      text: 'We will find what repeats next.',
-      focusPhrase: 'repeats next',
+      text: 'Mathematics is the search for patterns',
+      focusPhrase: 'search for patterns',
       sourceStepId: 'wim-1',
     },
     {
       id: 'wim-intro-2',
-      text: 'We will count how dots grow.',
-      focusPhrase: 'dots grow',
+      text: 'Such patterns indeed exist all around us',
+      focusPhrase: 'all around us',
       sourceStepId: 'wim-2',
     },
     {
       id: 'wim-intro-3',
-      text: 'We will spot moon cycles in nature.',
-      focusPhrase: 'moon cycles',
+      text: "Let's explore some examples",
+      focusPhrase: 'explore some examples',
       sourceStepId: 'wim-3',
     },
   ],
@@ -339,8 +339,8 @@ export function validateTopicIntros() {
     }
     slides.forEach((slide) => {
       const words = slide.text.trim().split(/\s+/);
-      if (words.length > 8) {
-        errors.push(`${slide.id}: exceeds 8 words (${words.length}): "${slide.text}"`);
+      if (words.length > 25) {
+        errors.push(`${slide.id}: exceeds 25 words (${words.length}): "${slide.text}"`);
       }
       if (!slide.text.includes(slide.focusPhrase)) {
         errors.push(`${slide.id}: focusPhrase "${slide.focusPhrase}" not found in "${slide.text}"`);

@@ -14,7 +14,7 @@ import {
   useProgressiveStep,
 } from './engine/useProgressiveStep';
 import { IndexDrawer } from './components/IndexDrawer';
-import { SectionIntroSlide } from './components/SectionIntroSlide';
+import { ChapterTitleSlide, SectionIntroSlide } from './components/SectionIntroSlide';
 import { PATTERN_SIM_STEPS, SimTopicId } from './components/patterns/simulations/patternSimData';
 import {
   ActiveTopicStep,
@@ -27,6 +27,12 @@ import {
 } from './components/patterns/ChapterSolutionsStage';
 
 type ConceptTimelineEntry =
+  | {
+      kind: 'title';
+      id: string;
+      topicId: SimTopicId;
+      fallbackStep: ActiveTopicStep;
+    }
   | {
       kind: 'intro';
       id: string;
@@ -110,22 +116,25 @@ const ConceptClassroomView: React.FC<
   const shellSteps: ClassroomStepMeta[] = useMemo(
     () =>
       entries.map((item) =>
-        item.kind === 'intro'
-          ? { id: item.id, title: '', teacherPrompt: '' }
-          : {
+        item.kind === 'step'
+          ? {
               id: item.id,
               title: item.step.title,
               teacherPrompt: item.step.teacherPrompt,
               ncertRef: item.step.ncertRef,
             }
+          : { id: item.id, title: '', teacherPrompt: '' }
       ),
     [entries]
   );
 
-  const isIntro = entry.kind === 'intro';
-  const trackerLabel = isIntro
-    ? `Intro ${entry.introIndex + 1} of ${entry.introTotal}`
-    : `Step ${entry.stepNumber} of ${entry.totalSectionSteps}: ${entry.step.title}`;
+  const isOverlaySlide = entry.kind === 'title' || entry.kind === 'intro';
+  const trackerLabel =
+    entry.kind === 'title'
+      ? 'Patterns in Mathematics'
+      : entry.kind === 'intro'
+      ? `Intro ${entry.introIndex + 1} of ${entry.introTotal}`
+      : `Step ${entry.stepNumber} of ${entry.totalSectionSteps}: ${entry.step.title}`;
 
   return (
     <ClassroomShell
@@ -136,8 +145,8 @@ const ConceptClassroomView: React.FC<
       currentStepIndex={safeIdx}
       onPrevStep={onPrevStep}
       onNextStep={onNextStep}
-      isAnimating={isIntro ? NO_OP_FALSE : progressive.isAnimating}
-      finishAnimation={isIntro ? NO_OP_FALSE : progressive.finishAnimation}
+      isAnimating={isOverlaySlide ? NO_OP_FALSE : progressive.isAnimating}
+      finishAnimation={isOverlaySlide ? NO_OP_FALSE : progressive.finishAnimation}
       mode={mode}
       onToggleMode={onToggleMode}
       showTeacherPrompt={showTeacherPrompt}
@@ -145,7 +154,9 @@ const ConceptClassroomView: React.FC<
       onOpenIndex={onOpenIndex}
       indexOpen={indexOpen}
       introSlide={
-        isIntro ? (
+        entry.kind === 'title' ? (
+          <ChapterTitleSlide mode={mode} />
+        ) : entry.kind === 'intro' ? (
           <SectionIntroSlide
             text={entry.intro.text}
             focusPhrase={entry.intro.focusPhrase}
@@ -222,7 +233,7 @@ function buildConceptTimeline(section: SectionConfig): ConceptTimelineEntry[] {
   const entries: ConceptTimelineEntry[] = [];
   let runningStepNumber = 0;
 
-  section.subTabs.forEach((st) => {
+  section.subTabs.forEach((st, subTabIdx) => {
     const topicId = st.id as SimTopicId;
     const topicSteps = PATTERN_SIM_STEPS[topicId] ?? [];
     if (topicSteps.length === 0) return;
@@ -232,6 +243,15 @@ function buildConceptTimeline(section: SectionConfig): ConceptTimelineEntry[] {
       topicId,
       topicStepIndex: 0,
     };
+
+    if (section.id === 'sec-1-1' && subTabIdx === 0) {
+      entries.push({
+        kind: 'title',
+        id: 'chapter-title-slide',
+        topicId,
+        fallbackStep: firstActiveStep,
+      });
+    }
 
     const intros = TOPIC_INTROS[topicId] ?? [];
     intros.forEach((intro, introIndex) => {
@@ -318,7 +338,7 @@ export default function App() {
     const targetSection =
       CHAPTER_SECTIONS.find((sec) => sec.id === targetSecId) || CHAPTER_SECTIONS[0];
     const targetEntries = buildConceptTimeline(targetSection);
-    const idx = targetEntries.findIndex((e) => e.topicId === topicId);
+    const idx = targetEntries.findIndex((e) => e.kind !== 'title' && e.topicId === topicId);
     setStepIndex(idx >= 0 ? idx : 0);
   };
 
